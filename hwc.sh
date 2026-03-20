@@ -132,6 +132,8 @@ LOG
     fi
     cat > "${CADDY_CONFIG_FILE}" << EOF
 {
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+    
     email ${email}
 }
 

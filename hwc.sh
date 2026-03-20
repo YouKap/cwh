@@ -27,7 +27,7 @@ CADDY_CONTAINER_NAME="caddy-manager"; CADDY_IMAGE_NAME="caddy:latest"; CADDY_CON
 WARP_CONTAINER_NAME="warp-docker"; WARP_IMAGE_NAME="ghcr.io/105pm/docker-warproxy:latest"; WARP_VOLUME_PATH="${APP_BASE_DIR}/warp-data"
 HYSTERIA_CONTAINER_NAME="hysteria-server"; HYSTERIA_IMAGE_NAME="tobyxdd/hysteria"; HYSTERIA_CONFIG_DIR="${APP_BASE_DIR}/hysteria"; HYSTERIA_CONFIG_FILE="${HYSTERIA_CONFIG_DIR}/config.yaml"
 SHARED_NETWORK_NAME="hwc-proxy-net"
-SCRIPT_URL="https://raw.githubusercontent.com/thenogodcom/warp/main/hwc.sh"; SHORTCUT_PATH="/usr/local/bin/hwc"
+SCRIPT_URL="https://raw.githubusercontent.com/YouKap/cwh/main/hwc.sh"; SHORTCUT_PATH="/usr/local/bin/hwc"
 declare -A CONTAINER_STATUSES
 
 # --- 第2節：所有函數定義 ---

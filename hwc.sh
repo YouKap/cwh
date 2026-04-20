@@ -2,7 +2,7 @@
 #
 # Description: Ultimate All-in-One Manager for Caddy, WARP & Hysteria with self-installing shortcut.
 # Author: Your Name (Inspired by P-TERX)
-# Version: 5.5.0 (Universal Docker Installer Edition)
+# Version: 5.5.1 (Universal Docker Installer Edition - Auto Pull Latest)
 
 # --- 第1節：全域設定與定義 ---
 
@@ -25,7 +25,7 @@ log() {
 APP_BASE_DIR="/root/hwc"
 CADDY_CONTAINER_NAME="caddy-manager"; CADDY_IMAGE_NAME="caddy:latest"; CADDY_CONFIG_DIR="${APP_BASE_DIR}/caddy"; CADDY_CONFIG_FILE="${CADDY_CONFIG_DIR}/Caddyfile"; CADDY_DATA_VOLUME="hwc_caddy_data"
 WARP_CONTAINER_NAME="warp-docker"; WARP_IMAGE_NAME="ghcr.io/105pm/docker-warproxy:latest"; WARP_VOLUME_PATH="${APP_BASE_DIR}/warp-data"
-HYSTERIA_CONTAINER_NAME="hysteria-server"; HYSTERIA_IMAGE_NAME="tobyxdd/hysteria"; HYSTERIA_CONFIG_DIR="${APP_BASE_DIR}/hysteria"; HYSTERIA_CONFIG_FILE="${HYSTERIA_CONFIG_DIR}/config.yaml"
+HYSTERIA_CONTAINER_NAME="hysteria-server"; HYSTERIA_IMAGE_NAME="tobyxdd/hysteria:latest"; HYSTERIA_CONFIG_DIR="${APP_BASE_DIR}/hysteria"; HYSTERIA_CONFIG_FILE="${HYSTERIA_CONFIG_DIR}/config.yaml"
 SHARED_NETWORK_NAME="hwc-proxy-net"
 SCRIPT_URL="https://raw.githubusercontent.com/YouKap/cwh/main/hwc.sh"; SHORTCUT_PATH="/usr/local/bin/hwc"
 declare -A CONTAINER_STATUSES
@@ -200,6 +200,10 @@ manage_caddy() {
                     read -p "是否為 Caddy 啟用詳細日誌？(用於排錯，預設為否) (y/N): " LOG_MODE < /dev/tty
                     generate_caddy_config "$DOMAIN" "$EMAIL" "$LOG_MODE"
                     docker network create "${SHARED_NETWORK_NAME}" &>/dev/null
+                    
+                    log INFO "正在檢查並拉取最新的 Caddy 映像檔..."
+                    docker pull "${CADDY_IMAGE_NAME}"
+                    
                     CADDY_CMD=(docker run -d --name "${CADDY_CONTAINER_NAME}" --restart always --network "${SHARED_NETWORK_NAME}" -p 80:80/tcp -p 443:443/tcp -v "${CADDY_CONFIG_FILE}:/etc/caddy/Caddyfile:ro" -v "${CADDY_DATA_VOLUME}:/data" "${CADDY_IMAGE_NAME}")
                     if "${CADDY_CMD[@]}"; then log INFO "Caddy 部署成功。正在後台申請證書，請稍候..."; else log ERROR "Caddy 部署失敗。"; fi
                     press_any_key; break;;
@@ -244,6 +248,10 @@ manage_warp() {
                 1)
                     log INFO "--- 正在安裝 WARP ---"
                     docker network create "${SHARED_NETWORK_NAME}" &>/dev/null
+                    
+                    log INFO "正在檢查並拉取最新的 WARP 映像檔..."
+                    docker pull "${WARP_IMAGE_NAME}"
+
                     WARP_CMD=(docker run -d --name "${WARP_CONTAINER_NAME}" --restart always --network "${SHARED_NETWORK_NAME}" -v "${WARP_VOLUME_PATH}:/var/lib/cloudflare-warp" --cap-add=MKNOD --cap-add=AUDIT_WRITE --cap-add=NET_ADMIN --device-cgroup-rule='c 10:200 rwm' --sysctl net.ipv6.conf.all.disable_ipv6=0 --sysctl net.ipv4.conf.all.src_valid_mark=1 "${WARP_IMAGE_NAME}")
                     if "${WARP_CMD[@]}"; then log INFO "WARP 部署成功。"; else log ERROR "WARP 部署失敗。"; fi
                     press_any_key; break;;
@@ -292,6 +300,10 @@ manage_hysteria() {
                     read -p "請為 Hysteria 設定一個連接密碼: " PASSWORD < /dev/tty
                     if [ -z "$DOMAIN" ] || [ -z "$PASSWORD" ]; then log ERROR "域名和密碼為必填項。"; press_any_key; continue; fi
                     generate_hysteria_config "$DOMAIN" "$PASSWORD" "$LOG_MODE"
+                    
+                    log INFO "正在檢查並拉取最新的 Hysteria 映像檔..."
+                    docker pull "${HYSTERIA_IMAGE_NAME}"
+
                     HY_CMD=(docker run -d --name "${HYSTERIA_CONTAINER_NAME}" --restart always --network "${SHARED_NETWORK_NAME}" --memory=256m -v "${HYSTERIA_CONFIG_FILE}:/config.yaml:ro" -v "${CADDY_DATA_VOLUME}:/data:ro" -p 443:443/udp "${HYSTERIA_IMAGE_NAME}" server -c /config.yaml)
                     if "${HY_CMD[@]}"; then log INFO "Hysteria 部署成功。"; else log ERROR "Hysteria 部署失敗。"; fi
                     press_any_key; break;;
@@ -372,6 +384,10 @@ uninstall_all_services() {
     log INFO "正在刪除本地設定檔和數據..."; rm -rf "${APP_BASE_DIR}"; log INFO "本地設定檔和數據目錄 (${APP_BASE_DIR}) 已刪除。"
     log INFO "正在刪除 Docker 數據卷..."; docker volume rm "${CADDY_DATA_VOLUME}" &>/dev/null; log INFO "Docker 數據卷已刪除。"
     log INFO "正在刪除共享網路..."; docker network rm "${SHARED_NETWORK_NAME}" &>/dev/null; log INFO "共享網路已刪除。"
+    
+    log INFO "正在清理無用的 Docker 舊映像檔..."
+    docker image prune -f &>/dev/null
+    
     log INFO "所有服務已徹底清理完畢。"
 }
 
@@ -393,7 +409,7 @@ start_menu() {
     while true; do
         check_all_status
         clear
-        echo -e "\n${FontColor_Purple}Caddy + WARP + Hysteria 終極管理腳本${FontColor_Suffix} (v5.5.0)"
+        echo -e "\n${FontColor_Purple}Caddy + WARP + Hysteria 終極管理腳本${FontColor_Suffix} (v5.5.1)"
         echo -e "  快捷命令: ${FontColor_Yellow}hwc${FontColor_Suffix}"
         echo -e "  設定目錄: ${FontColor_Yellow}${APP_BASE_DIR}${FontColor_Suffix}"
         echo -e " --------------------------------------------------"
